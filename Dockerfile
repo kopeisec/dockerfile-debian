@@ -1,20 +1,94 @@
-FROM hub.deepin.com/library/debian:12
+FROM debian:12
 ENV DEBIAN_FRONTEND=noninteractive
-RUN set -e; \
-    mkdir -p /etc/apt/sources.list.d/; \
-    rm -rf /etc/apt/sources.list.d/debian.sources; \
-    echo "\
-deb http://mirrors.ustc.edu.cn/debian/ bookworm main contrib non-free non-free-firmware\n\
-deb http://mirrors.ustc.edu.cn/debian/ bookworm-updates main contrib non-free non-free-firmware\n\
-deb http://mirrors.ustc.edu.cn/debian/ bookworm-backports main contrib non-free non-free-firmware\n\
-deb http://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free non-free-firmware\n" > /etc/apt/sources.list.d/ustc.list; \
-    apt-get update; \
-    apt-get install -y apt-transport-https ca-certificates; \
-    echo "\
-deb https://mirrors.ustc.edu.cn/debian/ bookworm main contrib non-free non-free-firmware\n\
-deb https://mirrors.ustc.edu.cn/debian/ bookworm-updates main contrib non-free non-free-firmware\n\
-deb https://mirrors.ustc.edu.cn/debian/ bookworm-backports main contrib non-free non-free-firmware\n\
-deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free non-free-firmware\n" > /etc/apt/sources.list.d/ustc.list;
-RUN apt update && \
-    apt upgrade -y && \
-    apt install -y git cmake make ca-certificates jq pv
+
+# Upgrade
+RUN \
+    apt update && \
+    apt upgrade -y
+
+# Install basic tools \
+RUN \
+    apt install -y \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        git \
+        iputils-ping \
+        jq \
+        ncat \
+        ncdu \
+        net-tools \
+        pv \
+        rsync \
+        tree \
+        tzdata \
+        wget \
+        xz-utils \
+    && echo "Basic tools installed."
+
+# Install mc
+RUN \
+    case $(uname -m) in \
+    x86_64|amd64) \
+        curl https://dl.min.io/client/mc/release/linux-amd64/mc \
+            -fsSL --create-dirs -o /usr/bin/mc \
+    ;; \
+    aarch64|arm64) \
+        curl https://dl.min.io/client/mc/release/linux-arm64/mc \
+            -fsSL --create-dirs -o /usr/bin/mc \
+    ;; \
+    esac && \
+    chmod +x /usr/bin/mc
+
+# Install yq
+RUN \
+    case $(uname -m) in \
+    x86_64|amd64) \
+        curl https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 \
+            -fsSL --create-dirs -o /usr/bin/yq \
+    ;; \
+    aarch64|arm64) \
+        curl https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 \
+            -fsSL --create-dirs -o /usr/bin/yq \
+    ;; \
+    esac && \
+    chmod +x /usr/bin/yq
+
+# Install rclone
+RUN \
+    apt install -y rclone
+
+# Install go1.23.9
+RUN \
+    install_go_sdk() { \
+        go_version="${1:?}" && \
+        case $(uname -m) in \
+            x86_64|amd64) \
+                curl -fsSLO "https://go.dev/dl/${go_version}.linux-amd64.tar.gz" && \
+                tar -zxf "${go_version}.linux-amd64.tar.gz" && \
+                mv go/   "${go_version}/" && \
+                rm -f    "${go_version}.linux-amd64.tar.gz" \
+                ;; \
+            aarch64|arm64) \
+                curl -fsSLO "https://go.dev/dl/${go_version}.linux-arm64.tar.gz" && \
+                tar -zxf "${go_version}.linux-arm64.tar.gz" && \
+                mv go/   "${go_version}/" && \
+                rm -f    "${go_version}.linux-arm64.tar.gz" \
+                ;; \
+        esac \
+    } && \
+    mkdir -p /gosdk/ && \
+    cd /gosdk/ && \
+    install_go_sdk 'go1.20.14' && \
+    install_go_sdk 'go1.23.9' && \
+    install_go_sdk 'go1.24.3'
+
+# Install mediawiki-page-publish
+RUN \
+    GOROOT="/gosdk/go1.20.14" && \
+    PATH="${GOROOT}/bin:${PATH}" && \
+    mkdir -p /src/ && \
+    cd /src/ && \
+    git clone https://github.com/ismdeep/mediawiki-page-publish.git && \
+    cd /src/mediawiki-page-publish/ && \
+    go build -o /usr/bin/mediawiki-page-publish -mod vendor -trimpath -ldflags '-s -w' .
