@@ -80,6 +80,8 @@ RUN \
     mkdir -p /gosdk/ && \
     cd /gosdk/ && \
     install_go_sdk 'go1.20.14' && \
+    install_go_sdk 'go1.21.13' && \
+    install_go_sdk 'go1.22.12' && \
     install_go_sdk 'go1.23.9' && \
     install_go_sdk 'go1.24.3'
 
