@@ -93,4 +93,8 @@ RUN \
     cd /src/ && \
     git clone https://github.com/ismdeep/mediawiki-page-publish.git && \
     cd /src/mediawiki-page-publish/ && \
-    go build -o /usr/bin/mediawiki-page-publish -mod vendor -trimpath -ldflags '-s -w' .
+    go build -o /usr/bin/mediawiki-page-publish -mod vendor -trimpath -ldflags '-s -w' . && \
+    cd / && \
+    rm -rf /src/ && \
+    rm -rf /root/.cache/ && \
+    rm -rf /root/go/
