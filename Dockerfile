@@ -1,6 +1,6 @@
 FROM debian:11
 ENV DEBIAN_FRONTEND=noninteractive
-ENV GO_VERSION="go1.20.14"
+ENV GO_VERSION="go1.22.12"
 ENV GOROOT="/gosdk/${GO_VERSION}"
 ENV PATH="${GOROOT}/bin:${PATH}"
 
